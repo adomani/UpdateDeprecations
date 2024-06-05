@@ -245,7 +245,11 @@ def updateDeprecations : Cmd := `[Cli|
   You can run this on some modules only, using the optional `--mods`-flag: running\n\n\
   lake exe update_deprecations --mods One.Two.Three,Dd.Ee.Ff\n\n\
   only updates the deprecations in `One.Two.Three` and `Dd.Ee.Ff`. \
-  Note that you should provide a comma-separated list of module names, with no spaces between them."
+  Note that you should provide a comma-separated list of module names, with no spaces between them. \
+  As a convenience, the script tries to parse *paths* instead of *module names*: \
+  passing\n\n\
+  lake exe update_deprecations --mods One/Two/Three.lean,Dd.Ee.Ff\n\n\
+  has the same effect as the command above."
 
   FLAGS:
     mods : Array String; "you can pass an array of modules using the `--mods`-flag \

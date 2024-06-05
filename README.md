@@ -13,12 +13,12 @@ lake exe update_deprecations --mods One.Two.Three,Dd.Ee.Ff
 ```
 to limit the scope of the replacements to the modules `One.Two.Three` and `Dd.Ee.Ff`.
 
-As a convenience, the script will try to parse *paths* instead of *module names*:
+As a convenience, the script tries to parse *paths* instead of *module names*:
 passing
 ```bash
 lake exe update_deprecations --mods One/Two/Three.lean,Dd.Ee.Ff
 ```
-should have the same effect as the command above.
+has the same effect as the command above.
 
 Currently, this does *not* work with dot-notation.
 I will update the script once the deprecation warning for dot-notation becomes available.
