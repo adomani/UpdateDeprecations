@@ -44,8 +44,7 @@ lake env update_deprecations --help
 ```
 provides some help.
 
+## Warning
 
-
-lake update UpdateDeprecations
-lake exe update_deprecations --help
-lake exe update_deprecations --mods Mathlib/test_depr_no_change.lean,Mathlib/test_depr.lean
+Using `lake exe update_deprecations` (note the `exe` instead of `env`) will corrupt the package.
+To revert to a functioning script, run `lake update UpdateDeprecations` and still to `env`!  :smile:
