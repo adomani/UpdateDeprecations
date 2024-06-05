@@ -103,7 +103,7 @@ def getBuild (mods : Array String := #[]) : IO String := do
       (mod.dropRight 5).replace ⟨[System.FilePath.pathSeparator]⟩ "." else mod
   dbg_trace mods
   let build ← IO.Process.output { cmd := "lake", args := #["build", "--no-build"] ++ mods }
-  dbg_trace "postBuild {build.stdout} {build.stderr}"
+  dbg_trace "postBuild\nout: '{build.stdout}'\nerr: '{build.stderr}'"
   if build.exitCode != 0 then
     IO.println "There are out of date oleans. Run `lake build` or `lake exe cache get` first"
     return default
@@ -221,9 +221,12 @@ def updateDeprecationsCLI (args : Parsed) : IO UInt32 := do
               | none => return #[]
   let buildOutput ← getBuild mods
   if buildOutput.isEmpty then return 1
+  dbg_trace "after build"
   Lean.initSearchPath (← Lean.findSysroot)
+  dbg_trace "after searchpath"
   -- create the environment with `import UpdateDeprecations.Main`
   let env : Environment ← importModules #[{module := `UpdateDeprecations.Main}] {}
+  dbg_trace "after env"
   -- process the `lake build` output, catching messages
   let (_, msgLog) ← Lean.Elab.process buildOutput env {}
   let exitCode := ← match msgLog.msgs.toArray with
@@ -233,6 +236,7 @@ def updateDeprecationsCLI (args : Parsed) : IO UInt32 := do
     | msgs => do
       IO.println f!"{← msgs.mapM (·.toString)}"
       return 1
+  dbg_trace "after messages"
   if exitCode == 0 then return 0
   -- the exit code is the total number of changes that should have happened, whether or not they
   -- actually took place modulo `UInt32.size = 4294967296` (returning 1 if the remainder is `0`).
