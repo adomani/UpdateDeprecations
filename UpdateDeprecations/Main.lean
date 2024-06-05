@@ -264,5 +264,7 @@ def updateDeprecations : Cmd := `[Cli|
                           e.g. `--mods One.Two.Three,Dd.Ee.Ff`"
 ]
 
+end UpdateDeprecations
+
 /-- The entrypoint to the `lake exe update_deprecations` command. -/
-def main (args : List String) : IO UInt32 := updateDeprecations.validate args
+def main (args : List String) : IO UInt32 := UpdateDeprecations.updateDeprecations.validate args
