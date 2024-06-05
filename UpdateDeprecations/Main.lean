@@ -101,6 +101,7 @@ def getBuild (mods : Array String := #[]) : IO String := do
   let mods := mods.map fun mod =>
     if mod.takeRight 5 == ".lean" then
       (mod.dropRight 5).replace ⟨[System.FilePath.pathSeparator]⟩ "." else mod
+  dbg_trace mods
   let build ← IO.Process.output { cmd := "lake", args := #["build", "--no-build"] ++ mods }
   if build.exitCode != 0 then
     IO.println "There are out of date oleans. Run `lake build` or `lake exe cache get` first"
