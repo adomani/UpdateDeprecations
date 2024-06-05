@@ -1,7 +1,7 @@
 import Lake
 open Lake DSL
 
-package updateDeprecations where
+package UpdateDeprecations where
   leanOptions := #[
     ⟨`pp.unicode.fun, true⟩, -- pretty-prints `fun a ↦ b`
     ⟨`autoImplicit, false⟩,

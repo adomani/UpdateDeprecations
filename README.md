@@ -22,3 +22,24 @@ has the same effect as the command above.
 
 Currently, this does *not* work with dot-notation.
 I will update the script once the deprecation warning for dot-notation becomes available.
+
+## Using `lake exe update_deprecations` in your project
+
+Add
+```lean
+require updateDeprecations from git "https://github.com/adomani/UpdateDeprecations" @ "master"
+```
+to the `lakefile.lean`.
+After that, run
+```bash
+lake update updateDeprecations
+```
+to download the package.
+
+You are good to go!
+
+Typing
+```bash
+lake exe update_deprecations --help
+```
+provides some help.
