@@ -221,7 +221,7 @@ def updateDeprecationsCLI (args : Parsed) : IO UInt32 := do
               | none => return #[]
   let buildOutput ← getBuild mods
   if buildOutput.isEmpty then return 1
-  Lean.initSearchPath (← Lean.findSysroot)
+  --Lean.initSearchPath (← Lean.findSysroot)
   -- create the environment with `import UpdateDeprecations.Main`
   let env : Environment ← importModules (leakEnv := true) #[{module := `UpdateDeprecations.Main}] {}
   -- process the `lake build` output, catching messages
