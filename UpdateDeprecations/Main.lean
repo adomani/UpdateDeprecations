@@ -97,6 +97,10 @@ the replayed build, otherwise it asks to build/download the cache.
 The optional `mods` argument is an array of module names, limiting the build to the given
 array, if `mods ≠ #[]`. -/
 def getBuild (mods : Array String := #[]) : IO String := do
+  -- for the entries of `mods` that end in `.lean`, remove the ending and replace `/` with `.`
+  let mods := mods.map fun mod =>
+    if mod.takeRight 5 == ".lean" then
+      (mod.dropRight 5).replace ⟨[System.FilePath.pathSeparator]⟩ "." else mod
   let build ← IO.Process.output { cmd := "lake", args := #["build", "--no-build"] ++ mods }
   if build.exitCode != 0 then
     IO.println "There are out of date oleans. Run `lake build` or `lake exe cache get` first"
@@ -190,8 +194,10 @@ elab bds:build* tk:"Build completed successfully." : command => do
   let msg :=
     if noFiles == 0 then m!"No modifications needed"
     else if modifiedFiles.toArray.all (fun (_, _, x) => x == 0) then
-      m!"{(modifiedFiles.fold (fun a _ (x, _) => a + x) 0)} modifications \
-          across {noFiles} files, all successful"
+      let totalModifications := modifiedFiles.fold (fun a _ (x, _) => a + x) 0
+      let toMo := m!"{totalModifications} modification" ++ if totalModifications == 1 then m!"" else "s"
+      let moFi := m!" across {noFiles} file" ++ if noFiles == 1 then m!"" else "s"
+      toMo ++ moFi ++ ", all successful"
     else
       modifiedFiles.fold (init := "| File | mods | unmods |\n|-|-|")
         fun msg fil (modified, unmodified) =>
@@ -214,8 +220,8 @@ def updateDeprecationsCLI (args : Parsed) : IO UInt32 := do
   let buildOutput ← getBuild mods
   if buildOutput.isEmpty then return 1
   Lean.initSearchPath (← Lean.findSysroot)
-  -- create the environment with `import Mathlib.Tactic.UpdateDeprecations`
-  let env : Environment ← importModules #[{module := `Mathlib.Tactic.UpdateDeprecations}] {}
+  -- create the environment with `import UpdateDeprecations.Main`
+  let env : Environment ← importModules #[{module := `UpdateDeprecations.Main}] {}
   -- process the `lake build` output, catching messages
   let (_, msgLog) ← Lean.Elab.process buildOutput env {}
   let exitCode := ← match msgLog.msgs.toArray with
