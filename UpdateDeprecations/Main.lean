@@ -26,6 +26,8 @@ Currently, this does *not* work with dot-notation.
 I will update the script once the deprecation warning for dot-notation becomes available.
 -/
 
+namespace UpdateDeprecations
+
 /-- `findNamespaceMatch fullName s` assumes that
 * `fullName` is a string representing the fully-qualified name of a declaration
   (e.g. `Nat.succ` instead of `succ` or `.succ`);
@@ -57,7 +59,7 @@ If `check` coincides with the substring of `s` beginning at `st`, then it return
 identified occurrence of `check` replaced by `repl`.
 Otherwise, it returns `none`.
 -/
-def String.replaceCheck (s check repl : String) (st : Nat) : Option String :=
+def replaceCheck (s check repl : String) (st : Nat) : Option String :=
   match findNamespaceMatch check (s.drop st) with
     | none => none
     | some check =>
@@ -87,7 +89,7 @@ def substitutions (lines : Array String) (dat : Array ((String × String) × (Na
   let mut unreplaced := 0
   for ((check, repl), (l', c)) in dat do
     let l := l' - 1
-    match new[l]!.replaceCheck check repl c with
+    match replaceCheck new[l]! check repl c with
       | some newLine => new := new.modify l (fun _ => newLine); replaced := replaced + 1
       | none => unreplaced := unreplaced + 1
   ((replaced, unreplaced), new)
@@ -222,7 +224,7 @@ def updateDeprecationsCLI (args : Parsed) : IO UInt32 := do
   let buildOutput ← getBuild mods
   if buildOutput.isEmpty then return 1
   dbg_trace "after build"
-  --Lean.initSearchPath (← Lean.findSysroot)
+  Lean.initSearchPath (← Lean.findSysroot)
   dbg_trace "after searchpath"
   -- create the environment with `import UpdateDeprecations.Main`
   let env : Environment ← importModules #[{module := `UpdateDeprecations.Main}] {}
