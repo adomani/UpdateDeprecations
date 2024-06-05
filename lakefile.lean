@@ -15,7 +15,7 @@ lean_lib UpdateDeprecations where
 --  -- add library configuration options here
 
 /-- `lake exe update_deprecations` automatically updates deprecations. -/
-@[default_target]
+--@[default_target]
 lean_exe update_deprecations where
   srcDir := "UpdateDeprecations"
   root := `Main
