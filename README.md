@@ -47,4 +47,4 @@ provides some help.
 ## Warning
 
 Using `lake exe update_deprecations` (note the `exe` instead of `env`) will corrupt the package.
-To revert to a functioning script, run `lake update UpdateDeprecations` and still to `env`!  :smile:
+To revert to a functioning script, run `lake update UpdateDeprecations` and stick to `env`!  :smile:
