@@ -1,7 +1,7 @@
 import Lake
 open Lake DSL
 
-package «UpdateDeprecations» where
+package updateDeprecations where
   leanOptions := #[
     ⟨`pp.unicode.fun, true⟩, -- pretty-prints `fun a ↦ b`
     ⟨`autoImplicit, false⟩,
@@ -10,15 +10,13 @@ package «UpdateDeprecations» where
 
 require Cli from git "https://github.com/leanprover/lean4-cli" @ "main"
 
-lean_lib «UpdateDeprecations» where
-  -- add library configuration options here
-lean_lib Cache
+@[default_target]
+lean_lib UpdateDeprecations where
+--  -- add library configuration options here
 
 /-- `lake exe update_deprecations` automatically updates deprecations. -/
+--@[default_target]
 lean_exe update_deprecations where
-  srcDir := "scripts"
-  supportInterpreter := true
-
-@[default_target]
-lean_exe «updatedeprecations» where
+  srcDir := "UpdateDeprecations"
   root := `Main
+  supportInterpreter := true
