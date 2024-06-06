@@ -1,5 +1,7 @@
 import UpdateDeprecations.Main
 
+open UpdateDeprecations
+
 run_cmd
   let fn := "True.hish"
   let s1 := ".hish and more text"
@@ -13,25 +15,25 @@ run_cmd
 #guard_msgs in
 #eval
   let str := "  refine' ⟨_, _⟩"
-  str.replaceCheck "_" "?_" 11 == "  refine' ⟨?_, _⟩"
+  replaceCheck str "_" "?_" 11 == "  refine' ⟨?_, _⟩"
 
 /-- info: true -/
 #guard_msgs in
 #eval
   let str := "  refine' ⟨_, _⟩"
-  str.replaceCheck "" "?" 11 == "  refine' ⟨?_, _⟩"
+  replaceCheck str "" "?" 11 == "  refine' ⟨?_, _⟩"
 
 /-- info: true -/
 #guard_msgs in
 #eval
   let str := "  refine' ⟨_, _⟩"
-  str.replaceCheck "refine'" "refine" 2 == "  refine ⟨_, _⟩"
+  replaceCheck str "refine'" "refine" 2 == "  refine ⟨_, _⟩"
 
 /-- info: true -/
 #guard_msgs in
 #eval
   let str := "  refine' ⟨_, _⟩"
-  str.replaceCheck "'" "" 8 == "  refine ⟨_, _⟩"
+  replaceCheck str "'" "" 8 == "  refine ⟨_, _⟩"
 
 open Lean Elab Command
 run_cmd liftTermElabM do

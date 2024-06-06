@@ -26,6 +26,8 @@ Currently, this does *not* work with dot-notation.
 I will update the script once the deprecation warning for dot-notation becomes available.
 -/
 
+namespace UpdateDeprecations
+
 /-- `findNamespaceMatch fullName s` assumes that
 * `fullName` is a string representing the fully-qualified name of a declaration
   (e.g. `Nat.succ` instead of `succ` or `.succ`);
@@ -47,7 +49,7 @@ def findNamespaceMatch (fullName s : String) : Option String :=
   dbg_trace "No tail segment of '{fullName}' is a prefix of '{s}'"
   return none
 
-/-- `String.replaceCheck s check repl st` takes as input
+/-- `replaceCheck s check repl st` takes as input
 * a "source" `String` `s`;
 * a `String` `check` representing what should be replaced;
 * a replacement `String` `repl`;
@@ -57,7 +59,7 @@ If `check` coincides with the substring of `s` beginning at `st`, then it return
 identified occurrence of `check` replaced by `repl`.
 Otherwise, it returns `none`.
 -/
-def String.replaceCheck (s check repl : String) (st : Nat) : Option String :=
+def replaceCheck (s check repl : String) (st : Nat) : Option String :=
   match findNamespaceMatch check (s.drop st) with
     | none => none
     | some check =>
@@ -87,7 +89,7 @@ def substitutions (lines : Array String) (dat : Array ((String × String) × (Na
   let mut unreplaced := 0
   for ((check, repl), (l', c)) in dat do
     let l := l' - 1
-    match new[l]!.replaceCheck check repl c with
+    match replaceCheck new[l]! check repl c with
       | some newLine => new := new.modify l (fun _ => newLine); replaced := replaced + 1
       | none => unreplaced := unreplaced + 1
   ((replaced, unreplaced), new)
@@ -256,5 +258,7 @@ def updateDeprecations : Cmd := `[Cli|
                           e.g. `--mods One.Two.Three,Dd.Ee.Ff`"
 ]
 
+end UpdateDeprecations
+
 /-- The entrypoint to the `lake exe update_deprecations` command. -/
-def main (args : List String) : IO UInt32 := updateDeprecations.validate args
+def main (args : List String) : IO UInt32 := UpdateDeprecations.updateDeprecations.validate args
