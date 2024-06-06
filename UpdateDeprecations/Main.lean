@@ -221,7 +221,7 @@ def updateDeprecationsCLI (args : Parsed) : IO UInt32 := do
   let buildOutput ← getBuild mods
   dbg_trace "after build '{buildOutput}'"
   if buildOutput.isEmpty then return 1
-  Lean.initSearchPath (← Lean.findSysroot)
+  --Lean.initSearchPath (← Lean.findSysroot)
   dbg_trace "after findSys"
   -- create the environment with `import UpdateDeprecations.Main`
   let env : Environment ← importModules (leakEnv := true) #[{module := `UpdateDeprecations.Main}] {}
