@@ -49,7 +49,7 @@ def findNamespaceMatch (fullName s : String) : Option String :=
   dbg_trace "No tail segment of '{fullName}' is a prefix of '{s}'"
   return none
 
-/-- `String.replaceCheck s check repl st` takes as input
+/-- `replaceCheck s check repl st` takes as input
 * a "source" `String` `s`;
 * a `String` `check` representing what should be replaced;
 * a replacement `String` `repl`;
@@ -142,7 +142,7 @@ syntax "⚠ [" num "/" num "]" ident ident : build
 /-- A `buildSeq` consists of a sequence of `build` followed by `Build completed successfully.` -/
 syntax build* "Build completed successfully." : buildSeq
 
-/-- Syntax for the output of a file in `lake build`, e.g. `././././Mathlib/Data/Nat/Defs.lean`. -/
+/-- Syntax for the output of a file in `lake build`, e.g. `././././MyProject/Path/To/File.lean`. -/
 syntax "././././" sepBy(ident, "/") : build
 
 /-- a deprecated declaration. -/
@@ -210,9 +210,7 @@ elab bds:build* tk:"Build completed successfully." : command => do
   logInfoAt tk m!"{noFiles}"
 end elabs
 
-open Lean System.FilePath
-
-open IO.FS IO.Process Name Cli in
+open Cli in
 /-- Implementation of the `update_deprecations` command line program.
 The exit code is the number of files that the command updates/creates. -/
 def updateDeprecationsCLI (args : Parsed) : IO UInt32 := do
@@ -239,9 +237,8 @@ def updateDeprecationsCLI (args : Parsed) : IO UInt32 := do
   -- In particular, the exit code is `0` if and only if no replacement was necessary.
   else return ⟨max 1 (exitCode % UInt32.size), by unfold UInt32.size; omega⟩
 
-open Cli in
 /-- Setting up command line options and help text for `lake exe update_deprecations`. -/
-def updateDeprecations : Cmd := `[Cli|
+def updateDeprecations : Cli.Cmd := `[Cli|
   updateDeprecations VIA updateDeprecationsCLI; ["0.0.1"]
   "\nPerform the substitutions suggested by the output of `lake build` on the whole project. \
   You can run this on some modules only, using the optional `--mods`-flag: running\n\n\
