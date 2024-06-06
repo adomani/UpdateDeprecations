@@ -142,7 +142,7 @@ syntax "⚠ [" num "/" num "]" ident ident : build
 /-- A `buildSeq` consists of a sequence of `build` followed by `Build completed successfully.` -/
 syntax build* "Build completed successfully." : buildSeq
 
-/-- Syntax for the output of a file in `lake build`, e.g. `././././Mathlib/Data/Nat/Defs.lean`. -/
+/-- Syntax for the output of a file in `lake build`, e.g. `././././MyProject/Path/To/File.lean`. -/
 syntax "././././" sepBy(ident, "/") : build
 
 /-- a deprecated declaration. -/
