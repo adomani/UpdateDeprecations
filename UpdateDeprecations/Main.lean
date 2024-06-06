@@ -217,11 +217,15 @@ def updateDeprecationsCLI (args : Parsed) : IO UInt32 := do
   let mods := ← match args.flag? "mods" with
               | some mod => return mod.as! (Array String)
               | none => return #[]
+  dbg_trace "{mods}"
   let buildOutput ← getBuild mods
+  dbg_trace "after build '{buildOutput}'"
   if buildOutput.isEmpty then return 1
   Lean.initSearchPath (← Lean.findSysroot)
+  dbg_trace "after findSys"
   -- create the environment with `import UpdateDeprecations.Main`
   let env : Environment ← importModules (leakEnv := true) #[{module := `UpdateDeprecations.Main}] {}
+  dbg_trace "after env"
   -- process the `lake build` output, catching messages
   let (_, msgLog) ← Lean.Elab.process buildOutput env {}
   let exitCode := ← match msgLog.msgs.toArray with
