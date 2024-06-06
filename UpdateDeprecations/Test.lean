@@ -37,5 +37,5 @@ run_cmd
 
 open Lean Elab Command
 run_cmd liftTermElabM do
-  let fil ← `(build| ././././$(mkIdent `Mathlib)/$(mkIdent `new.lean))
-  guard <| toFile fil == "Mathlib/new.lean"
+  let fil ← `(build| ././././$(mkIdent `MyProject)/$(mkIdent `new.lean))
+  guard <| toFile fil == "MyProject/new.lean"
