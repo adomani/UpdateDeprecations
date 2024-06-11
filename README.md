@@ -23,6 +23,8 @@ has the same effect as the command above.
 Currently, this does *not* work with dot-notation.
 I will update the script once the deprecation warning for dot-notation becomes available.
 
+---
+
 ## Using `lake exe update_deprecations` in your project
 
 Add
@@ -44,11 +46,13 @@ lake exe update_deprecations --help
 ```
 provides some help.
 
+---
+
 ### Testing that the setup works
 
 After `lake update UpdateDeprecations` you should have a copy of the `UpdateDeprecations` repository in you `.lake/packages` folder.
 
-Copy the `Practice.lean` file from there inside your main project folder, build it and update the deprecations.
+To see the script in action, copy the `Practice.lean` file from there inside your main project folder, build it and update the deprecations.
 ```bash
 MyProject='MainDir'
 cp -i .lake/packages/UpdateDeprecations/Practice.lean "${MyProject}"/Practice.lean
