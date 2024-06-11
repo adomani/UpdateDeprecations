@@ -1,5 +1,4 @@
-import UpdateDeprecations.Main
-
+import UpdateDeprecations.Basic
 open UpdateDeprecations
 
 run_cmd
