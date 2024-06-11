@@ -43,3 +43,19 @@ Typing
 lake exe update_deprecations --help
 ```
 provides some help.
+
+### Testing that the setup works
+
+After `lake update UpdateDeprecations` you should have a copy of the `UpdateDeprecations` repository in you `.lake/packages` folder.
+
+Copy the `Practice.lean` file from there inside your main project folder, build it and update the deprecations.
+```bash
+MyProject='MainDir'
+cp -i .lake/packages/UpdateDeprecations/Practice.lean "${MyProject}"/Practice.lean
+
+lake build "${MyProject}".Practice
+## some warnings of deprecated declarations
+
+lake exe update_deprecations --mods "${MyProject}"/Practice.lean
+# 3 modifications across 1 file, all successful
+```
