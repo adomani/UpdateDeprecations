@@ -46,7 +46,7 @@ def findNamespaceMatch (fullName s : String) : Option String :=
     let withDot := "." ++ noDot
     if withDot.isPrefixOf s then return withDot
     comps := comps.drop 1
-  dbg_trace "No tail segment of '{fullName}' is a prefix of '{s}'"
+  dbg_trace "Could not replace '{fullName}' in '{s}'"
   return none
 
 /-- `replaceCheck s check repl st` takes as input
@@ -103,7 +103,6 @@ def getBuild (mods : Array String := #[]) : IO String := do
   let mods := mods.map fun mod =>
     if mod.takeRight 5 == ".lean" then
       (mod.dropRight 5).replace ⟨[System.FilePath.pathSeparator]⟩ "." else mod
-  dbg_trace "really {mods}"
   let build ← IO.Process.output { cmd := "lake", args := #["build", "--no-build"] ++ mods }
   if build.exitCode != 0 then
     IO.println "There are out of date oleans. Run `lake build` or `lake exe cache get` first"
@@ -218,15 +217,11 @@ def updateDeprecationsCLI (args : Parsed) : IO UInt32 := do
   let mods := ← match args.flag? "mods" with
               | some mod => return mod.as! (Array String)
               | none => return #[]
-  dbg_trace "{mods}"
   let buildOutput ← getBuild mods
-  dbg_trace "after build '{buildOutput}'"
   if buildOutput.isEmpty then return 1
   Lean.initSearchPath (← Lean.findSysroot)
-  dbg_trace "after findSys"
   -- create the environment with `import UpdateDeprecations.Basic`
   let env : Environment ← importModules (leakEnv := true) #[{module := `UpdateDeprecations}] {}
-  dbg_trace "after env"
   -- process the `lake build` output, catching messages
   let (_, msgLog) ← Lean.Elab.process buildOutput env {}
   let exitCode := ← match msgLog.msgs.toArray with
