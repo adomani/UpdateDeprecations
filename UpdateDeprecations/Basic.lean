@@ -46,7 +46,7 @@ def findNamespaceMatch (fullName s : String) : Option String :=
     let withDot := "." ++ noDot
     if withDot.isPrefixOf s then return withDot
     comps := comps.drop 1
-  dbg_trace "No tail segment of '{fullName}' is a prefix of '{s}'"
+  dbg_trace "Could not replace '{fullName}' in '{s}'"
   return none
 
 /-- `replaceCheck s check repl st` takes as input
@@ -220,8 +220,8 @@ def updateDeprecationsCLI (args : Parsed) : IO UInt32 := do
   let buildOutput ← getBuild mods
   if buildOutput.isEmpty then return 1
   Lean.initSearchPath (← Lean.findSysroot)
-  -- create the environment with `import UpdateDeprecations.Main`
-  let env : Environment ← importModules #[{module := `UpdateDeprecations.Main}] {}
+  -- create the environment with `import UpdateDeprecations.Basic`
+  let env : Environment ← importModules (leakEnv := true) #[{module := `UpdateDeprecations}] {}
   -- process the `lake build` output, catching messages
   let (_, msgLog) ← Lean.Elab.process buildOutput env {}
   let exitCode := ← match msgLog.msgs.toArray with
@@ -256,6 +256,3 @@ def updateDeprecations : Cli.Cmd := `[Cli|
 ]
 
 end UpdateDeprecations
-
-/-- The entrypoint to the `lake exe update_deprecations` command. -/
-def main (args : List String) : IO UInt32 := UpdateDeprecations.updateDeprecations.validate args
