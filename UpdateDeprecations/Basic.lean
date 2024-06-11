@@ -46,7 +46,6 @@ def findNamespaceMatch (fullName s : String) : Option String :=
     let withDot := "." ++ noDot
     if withDot.isPrefixOf s then return withDot
     comps := comps.drop 1
-  dbg_trace "Could not replace '{fullName}' in '{s}'"
   return none
 
 /-- `replaceCheck s check repl st` takes as input
@@ -90,9 +89,11 @@ def substitutions (lines : Array String) (dat : Array ((String × String) × (Na
   for ((check, repl), (l', c)) in dat do
     let l := l' - 1
     match replaceCheck new[l]! check repl c with
-      | some newLine => new := new.modify l (fun _ => newLine); replaced := replaced + 1
-      | none => unreplaced := unreplaced + 1
-  ((replaced, unreplaced), new)
+      | some newLine => (new, replaced) := (new.modify l (fun _ => newLine), replaced + 1)
+      | none         =>
+        dbg_trace s!"Could not replace '{check}' with '{repl}' in {new[l]!}"
+        unreplaced := unreplaced + 1
+  return ((replaced, unreplaced), new)
 
 /-- `getBuild` checks if there is an available cache.  If this is the case, then it returns
 the replayed build, otherwise it asks to build/download the cache.
