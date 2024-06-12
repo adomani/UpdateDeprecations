@@ -52,10 +52,10 @@ provides some help.
 
 After `lake update UpdateDeprecations` you should have a copy of the `UpdateDeprecations` repository in you `.lake/packages` folder.
 
-To see the script in action, copy the `Practice.lean` file from there inside your main project folder, build it and update the deprecations.
+To see the script in action, copy the `UpdateDeprecations/Practice.lean` file from there inside your main project folder, build it and update the deprecations.
 ```bash
 MyProject='MainDir'
-cp -i .lake/packages/UpdateDeprecations/Practice.lean "${MyProject}"/Practice.lean
+cp -i .lake/packages/UpdateDeprecations/UpdateDeprecations/Practice.lean "${MyProject}"/Practice.lean
 
 lake build "${MyProject}".Practice
 ## some warnings of deprecated declarations
