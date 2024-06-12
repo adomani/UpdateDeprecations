@@ -13,3 +13,14 @@ example : True ∧ True := by
   constructor
   · exact hello1
   · exact hello2 hello1
+
+example : True ∧ True := by
+  constructor
+  · exact hello1
+  · exact (by exact True.intro : ).hello2 /-
+    (by exact True.intro : ).ok2  --/
+
+example : True ∧ True := by
+  constructor
+  · exact hello1
+  · exact (by exact hello1 : ).hello2

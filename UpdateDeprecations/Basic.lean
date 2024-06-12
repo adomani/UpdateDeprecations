@@ -16,83 +16,158 @@ uses the information from deprecations to automatically substitute deprecated de
 
 The script handles namespacing, replacing a possibly non-fully-qualified, deprecated name with the fully-qualified non-deprecated name.
 
+It also handles dot-notation.
+
 It is also possible to use
 ```bash
 lake exe update_deprecations --mods One.Two.Three,Dd.Ee.Ff
 ```
 to limit the scope of the replacements to the modules `One.Two.Three` and `Dd.Ee.Ff`.
-
-Currently, this does *not* work with dot-notation.
-I will update the script once the deprecation warning for dot-notation becomes available.
 -/
 
 namespace UpdateDeprecations
 
-/-- `findNamespaceMatch fullName s` assumes that
-* `fullName` is a string representing the fully-qualified name of a declaration
-  (e.g. `Nat.succ` instead of `succ` or `.succ`);
-* `s` is a string beginning with a possibly non-fully qualified name
-  (e.g. any of `Nat.succ`, `succ`, `.succ`, possibly continuing with more characters).
-
-If `fullName` and `s` could represent the same declaration, then `findNamespaceMatch` returns
-`some <prefix of s matching namespaced fullName>` else it returns `none`
+/-- `List.getCommon left right` takes as input two lists `left` and `right`.
+It returns a triple `(common, left', right')` with the property that
+`left = common ++ left'` and `right = common ++ right'`.
 -/
-def findNamespaceMatch (fullName s : String) : Option String :=
-  Id.run do
-  let mut comps := fullName.splitOn "."
-  for _ in comps do
-    let noDot := ".".intercalate comps
-    if noDot.isPrefixOf s then return noDot
-    let withDot := "." ++ noDot
-    if withDot.isPrefixOf s then return withDot
-    comps := comps.drop 1
-  return none
+def List.getCommon {α} [BEq α] : List α → List α → List α × List α × List α
+  | [], r => ([], [], r)
+  | l, [] => ([], l, [])
+  | l::ls, r::rs =>
+    let (common, left, right) := List.getCommon ls rs
+    if l == r then
+      (l::common, left, right)
+    else
+      (common, l::left, r::right)
 
-/-- `replaceCheck s check repl st` takes as input
-* a "source" `String` `s`;
-* a `String` `check` representing what should be replaced;
-* a replacement `String` `repl`;
-* a natural number `st` representing the number of characters in `s` until the beginning of `check`.
+/-- `splitWithNamespace fullName dotNot` returns `(common, declName, (termName, rightComponents))`, where
+* `fullName = declName ++ common`;
+* `dotNot = termName ++ common ++ rightComponents`
 
-If `check` coincides with the substring of `s` beginning at `st`, then it returns `some s` with the
-identified occurrence of `check` replaced by `repl`.
-Otherwise, it returns `none`.
+and `common` is as large as possible, subject to the constraint that `rightComponents` does *not* contain
+a segment equal to the last segment of `fullName`.
+
+For example, with input `Nat.Prime.ne_two` and `hp.ne_two.symm` it returns
+`(["ne_two"], ["Nat", "Prime"], (["hp"], ["symm"]))`.
+Assuming the restriction on the right-most occurrence mentioned above, we can therefore deduce that
+* the type of `hp` is `Nat.Prime`, i.e. `hp : Nat.Prime`;
+* the lemma `Nat.Prime.ne_two` exists;
+* the type of `hp.ne_two` is something that has a `.symm` in its namespace, i.e. `hp.ne_two : xx` and `xx.symm` exists
+  (in this case, `xx = Ne`).
 -/
-def replaceCheck (s check repl : String) (st : Nat) : Option String :=
-  match findNamespaceMatch check (s.drop st) with
+def splitWithNamespace (fullName dotNot : String) : List String × List String × (List String × List String) :=
+  let fns := (fullName.splitOn ".").reverse
+  let dotns := (dotNot.splitOn ".").reverse
+  let tail := fns.headD ""
+  --if tail == "" then none else
+  let rightMostCommon := dotns.dropWhile (· != tail)  -- consider using matches further left as well
+  --if rightMostCommon == [] then none else
+  let (common, fns', rm') := (List.getCommon fns) rightMostCommon
+  (common.reverse, fns'.reverse, (rm'.reverse, (dotns.takeWhile (· != tail)).reverse))
+
+/-- `mIntercalate l` similar to `".".intercalate l`, except that it returns `[]` if the input list if `[]` and
+it returns the singleton list `[".".intercalate l]` otherwise. -/
+def mIntercalate (l : List String) : List String :=
+  match ".".intercalate l with
+    | "" => []
+    | str => [str]
+
+/-- `recombineNamespace fullName dotNot newName` returns a candidate for "fixing" a deprecation in a namespace.
+* `dotNot` is a string representing dot-notation being used and involving a deprecated name
+* `fullName` is the fully-qualified string associated to the name that is deprecated and appears in `dotNot`
+* `newName` is the fully-qualified string associated to the name that is the non-deprecated version of `fullName`
+
+It returns `none` if the final segment of `fullName` does not appear in `dotName`.
+-/
+def recombineNamespace (fullName dotNot newName : String) : Option String :=
+  let (common, declName, (termName, rightComponents)) := splitWithNamespace fullName dotNot
+  let beginning :=
+    if (".".intercalate declName).isPrefixOf newName then
+      -- we can still use the same dot-notation
+      [".".intercalate termName,
+        (newName.drop ((".".intercalate declName).length)).dropWhile (· == '.')]
+    else
+      -- dot-notation is no longer available
+      [s!"({newName} {".".intercalate termName})", ".".intercalate common]
+  if common == [] then none else
+  if termName == [] then newName else
+  ".".intercalate <| beginning ++ (mIntercalate rightComponents)
+
+def findFirstEnd (fullName s : String) : Option String :=
+  match (fullName.splitOn ".").getLast! with
+    | last =>
+      match s.splitOn last with
+        | h :: _ :: _ => h ++ last
+        | _ => none
+
+/--
+`ReplData` is the data extracted from the warning emitted by `lake build` for a deprecated name:
+|`ReplData.` | Description                                     |
+|      -     |   :-                                            |
+| `fullName` | the old, deprecated, fully-qualified name       |
+| `newName`  | the new, fully-qualified name                   |
+| `line`     | the line on which the replacement should happen |
+| `col`      | the column where the replacement should happen  |
+-/
+structure ReplData :=
+  fullName : String
+  newName  : String
+  line     : Nat
+  col      : Nat
+  deriving BEq
+
+/-- `ReplData.newLine r` returns the new line obtained by performing the substitution,
+taking into account the deprecation.
+If no substitution is necessary, then it returns `none`: this is an indication that something went wrong. -/
+def ReplData.newLine (r : ReplData) (lines : Array String) : Option String :=
+  let line := lines.getD (r.line - 1) ""
+  match findFirstEnd r.fullName (line.drop r.col) with
     | none => none
-    | some check =>
-      let sc := s.toList
-      let fi := st + check.length
-      some ⟨sc.take st ++ repl.toList ++ sc.drop fi⟩
+    | some s =>
+      if let some t := recombineNamespace r.fullName s r.newName then
+        line.take r.col ++ t ++ line.drop (r.col + s.length)
+      else none
+
+/-- We put the lexicographic order on the pairs `(line, col)` of `ReplData`, placing first positions that happen later.
+Most substitutions work on a line-by-line basis, so this is not necessary for "line information".
+However, in order to preserve column information, it is easier to perform the replacements on any given line from
+right to left.
+Since in the future some replacements may span several lines (or remove some of them), working backwards on the lines
+seems reasonable as well. -/
+instance : LT ReplData where
+  lt a b := (b.line < a.line) || (a.line == b.line && b.col < a.col)
+
+theorem ReplData.lt_iff {a b : ReplData} : a < b ↔ (b.line < a.line) || (a.line == b.line && b.col < a.col) := by rfl
+
+instance : DecidableRel (LT.lt (α := ReplData)) := fun _ _ => decidable_of_iff' _ ReplData.lt_iff
 
 /-- `substitutions lines dat` takes as input the array `lines` of strings and the "instructions"
-`dat : Array ((String × String) × (Nat × Nat))`.
-The elements of `dat` are of the form `((old, new), (line, column))` where
-* `(old, new)` is a pair of strings, representing
-  the current text `old` and the replacement text `new`;
-* `(line, column)` is a pair of natural number representing the position of the start of the `old`
-  text.
+`dat : Array ReplData`.
+The elements of `dat` contain the `(line, col)` information of the start of each `(deprecatedName, newName)` pair.
 
-For each replacement instruction, if the substring of `lines[line]!` starting at `column` is `old`,
-then `substitutions` replaces `old` with `new`, otherwise, it leaves the string unchanged.
+For each replacement instruction, if the substring of `lines[line]!` starting at `col` is "compatible" with being
+a `deprecatedName`, then `substitutions` replaces `deprecatedName` with a possible use of `newName`.
+Otherwise, it leaves the string unchanged.
 
 Once all the instructions have been parsed, `substitutions` returns a count of the number of
 successful substitutions, the number of unsuccessful substitutions and the array of strings
 incorporating all the substitutions.
 -/
-def substitutions (lines : Array String) (dat : Array ((String × String) × (Nat × Nat))) :
-    (Nat × Nat) × Array String := Id.run do
+def substitutions (lines : Array String) (dat : Array ReplData) : (Nat × Nat) × Array String := Id.run do
   let mut new := lines
   let mut replaced := 0
   let mut unreplaced := 0
-  for ((check, repl), (l', c)) in dat do
-    let l := l' - 1
-    match replaceCheck new[l]! check repl c with
-      | some newLine => (new, replaced) := (new.modify l (fun _ => newLine), replaced + 1)
-      | none         =>
-        dbg_trace s!"Could not replace '{check}' with '{repl}' in {new[l]!}"
+  -- sort the corrections, so that the lines are parsed in reverse order and, within each line,
+  -- the corrections are applied also in reverse order
+  for rd in dat.qsort (· < ·) do
+    let l := rd.line - 1
+    match rd.newLine new with
+      | none =>
+        dbg_trace s!"Could not replace '{rd.fullName}' with '{rd.newName}' in '{new[l]!}'"
         unreplaced := unreplaced + 1
+      | some newLine =>
+        (new, replaced) := (new.modify l (fun _ => newLine), replaced + 1)
   return ((replaced, unreplaced), new)
 
 /-- `getBuild` checks if there is an available cache.  If this is the case, then it returns
@@ -106,26 +181,14 @@ def getBuild (mods : Array String := #[]) : IO String := do
       (mod.dropRight 5).replace ⟨[System.FilePath.pathSeparator]⟩ "." else mod
   let build ← IO.Process.output { cmd := "lake", args := #["build", "--no-build"] ++ mods }
   if build.exitCode != 0 then
-    IO.println "There are out of date oleans. Run `lake build` or `lake exe cache get` first"
+    IO.println s!"`lake build --no-build` failed: the oleans may be out of date oleans. \
+                Try running `lake build{mods.foldl (init := "") fun x y => s!"{x} {y}"}` or `lake exe cache get` first"
     return default
   return build.stdout
 
 open Lean
 
 section build_syntax
-
-/-- `Corrections` is the `HashMap` storing information about corrections.
-The entries of the array associated to each `System.FilePath` are the two pairs
-* `(oldString, newString)`,
-* `(row, column)`.
--/
-abbrev Corrections := HashMap System.FilePath (Array ((String × String) × (Nat × Nat)))
-
-/-- extend the input `Corrections` with the given data. -/
-def extend (s : Corrections) (fil : System.FilePath) (oldNew : String × String) (pos : Nat × Nat) :
-    Corrections :=
-  let corrections := (s.find? fil).getD default
-  s.insert fil (corrections.push (oldNew, pos))
 
 /-- A custom syntax category for parsing the output lines of `lake build`:
 a `buildSeq` consists of a sequence of `build` followed by `Build completed successfully.` -/
@@ -167,24 +230,31 @@ def toFile : TSyntax `build → System.FilePath
 
 section elabs
 
+/-- `FromLinter` is the `HashMap` storing information about corrections that can be read off from the output of
+`lake build`.
+Each `System.FilePath` contains an array of `ReplData` containing information about `(deprecatedName, newName)` and
+the `(line, col)` pairs with the start of the deprecation.
+-/
+abbrev FromLinter := HashMap System.FilePath (Array ReplData)
+
 /-- extracts the corrections from a `build` syntax. -/
-def getCorrections : TSyntax `build → Option (System.FilePath × (String × String) × (Nat × Nat))
+def getFromLinter (fl : FromLinter) : TSyntax `build → FromLinter
   | `(build| warning: $fil:build: $s : $f : `$depr` has been deprecated, use `$new` instead) =>
-    let oldNewName := (depr.getId.toString, new.getId.toString)
-    (toFile fil, oldNewName, s.getNat, f.getNat)
-  | _ => default
+    let rd : ReplData :=  { fullName := depr.getId.toString
+                            newName  := new.getId.toString
+                            line     := s.getNat
+                            col      := f.getNat }
+    let fil := toFile fil
+    fl.insert fil <| ((fl.find? fil).getD #[]).push rd
+  | _ => fl
 
 /-- Parse the output of `lake build` and perform the relevant substitutions. -/
 elab bds:build* tk:"Build completed successfully." : command => do
-  let mut s : Corrections := {}
+  let mut fl : FromLinter := {}
   for bd in bds do
-    if let some (fil, oldNew, pos) := getCorrections bd then
-      s := extend s fil oldNew pos
-  let modifiedFiles ← s.foldM (init := {}) fun summary fil arr => do
+    fl := getFromLinter fl bd
+  let modifiedFiles ← fl.foldM (init := {}) fun summary fil arr => do
     let mut summary : HashMap System.FilePath (Nat × Nat) := summary
-    -- sort the corrections, so that the lines are parsed in reverse order and, within each line,
-    -- the corrections are applied also in reverse order
-    let arr := arr.qsort fun (_, (l1, c1)) (_, (l2, c2)) => l2 < l1 || (l1 == l2 && c2 < c1)
     let lines ← IO.FS.lines fil
     let ((replaced, unreplaced), replacedLines) := substitutions lines arr
     let (m, n) := (summary.find? fil).getD (0, 0)

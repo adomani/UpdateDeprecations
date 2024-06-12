@@ -7,6 +7,8 @@ uses the information from deprecations to automatically substitute deprecated de
 
 The script handles namespacing, replacing a possibly non-fully-qualified, deprecated name with the fully-qualified non-deprecated name.
 
+The script also attempts to deal with dot-notation, though it uses some heuristics in this case.
+
 It is also possible to use
 ```bash
 lake exe update_deprecations --mods One.Two.Three,Dd.Ee.Ff
@@ -19,9 +21,6 @@ passing
 lake exe update_deprecations --mods One/Two/Three.lean,Dd.Ee.Ff
 ```
 has the same effect as the command above.
-
-Currently, this does *not* work with dot-notation.
-I will update the script once the deprecation warning for dot-notation becomes available.
 
 ---
 
@@ -61,5 +60,5 @@ lake build "${MyProject}".Practice
 ## some warnings of deprecated declarations
 
 lake exe update_deprecations --mods "${MyProject}"/Practice.lean
-# 3 modifications across 1 file, all successful
+# 8 modifications across 1 file, all successful
 ```
