@@ -5,7 +5,8 @@ This repository contains the code to perform the auto-replacements of `deprecate
 Running `lake exe update_deprecations` assumes that there is a working cache and
 uses the information from deprecations to automatically substitute deprecated declarations.
 
-The script handles namespacing, replacing a possibly non-fully-qualified, deprecated name with the fully-qualified non-deprecated name.
+The script handles namespacing, replacing a possibly non-fully-qualified,
+deprecated name with the fully-qualified non-deprecated name.
 
 The script also attempts to deal with dot-notation, though it uses some heuristics in this case.
 
@@ -49,9 +50,11 @@ provides some help.
 
 ### Testing that the setup works
 
-After `lake update UpdateDeprecations` you should have a copy of the `UpdateDeprecations` repository in you `.lake/packages` folder.
+After `lake update UpdateDeprecations` you should have a copy of the `UpdateDeprecations`
+repository in you `.lake/packages` folder.
 
-To see the script in action, copy the `UpdateDeprecations/Practice.lean` file from there inside your main project folder, build it and update the deprecations.
+To see the script in action, copy the `UpdateDeprecations/Practice.lean` file
+from there inside your main project folder, build it and update the deprecations.
 ```bash
 MyProject='MainDir'
 cp -i .lake/packages/UpdateDeprecations/UpdateDeprecations/Practice.lean "${MyProject}"/Practice.lean
